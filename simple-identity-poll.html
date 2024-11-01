@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Service Identity Assessment</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .options button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1em;
+        }
+        .options button:hover {
+            background: #f0f7ff;
+        }
+        .progress {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+        }
+        .results {
+            text-align: center;
+        }
+        .type-description {
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        #chartContainer {
+            margin: 20px 0;
+            height: 300px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Public Service Identity Assessment</h1>
+        <p>Discover your public service identity type based on Bauman's theory</p>
+    </div>
+
+    <div id="quiz" class="card">
+        <div id="questionContainer" class="question"></div>
+        <div id="optionsContainer" class="options"></div>
+        <div id="progress" class="progress"></div>
+    </div>
+
+    <div id="results" class="card hidden">
+        <h2>Your Results</h2>
+        <canvas id="chartContainer"></canvas>
+        <div id="typeDescription" class="type-description"></div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                text: "When faced with a challenging academic project, you typically:",
+                options: [
+                    "See it as an opportunity to explore different approaches",
+                    "Follow a predetermined plan to reach your goal",
+                    "Feel overwhelmed and uncertain about how to proceed"
+                ]
+            },
+            {
+                text: "Your approach to career planning is:",
+                options: [
+                    "Keeping options open and being ready to switch paths",
+                    "Having a clear, long-term goal and working towards it",
+                    "Feeling anxious about the future and struggling to plan"
+                ]
+            },
+            {
+                text: "When building relationships with classmates, you tend to:",
+                options: [
+                    "Form multiple flexible connections between groups",
+                    "Develop deep, lasting friendships with a consistent group",
+                    "Find it difficult to maintain stable relationships"
+                ]
+            },
+            {
+                text: "Your response to new learning technologies is:",
+                options: [
+                    "Eagerly experimenting with different tools",
+                    "Carefully evaluating their alignment with habits",
+                    "Feeling frustrated by constant changes"
+                ]
+            },
+            {
+                text: "When participating in class discussions, you usually:",
+                options: [
+                    "Contribute diverse perspectives and readily change stance",
+                    "Express consistent viewpoints aligned with beliefs",
+                    "Hesitate to participate, feeling disconnected"
+                ]
+            }
+        ];
+
+        let currentQuestion = 0;
+        let answers = [];
+
+        const typeDescriptions = {
+            Tourist: "You are an innovator and adapter! Your strength lies in bringing fresh perspectives and handling change effectively. In public service, you excel at creating innovative solutions and building bridges between different approaches.",
+            Pilgrim: "You are a foundation builder! Your strength lies in creating stable, sustainable solutions. In public service, you excel at developing long-term policies and maintaining institutional knowledge.",
+            Vagabond: "You are a unique perspective-bringer! Your strength lies in identifying systemic issues and advocating for meaningful change. In public service, you excel at representing underserved voices and driving social innovation."
+        };
+
+        function showQuestion() {
+            const question = questions[currentQuestion];
+            document.getElementById('questionContainer').textContent = question.text;
+            
+            const optionsHtml = question.options.map((option, index) => 
+                `<button onclick="handleAnswer(${index})">${option}</button>`
+            ).join('');
+            
+            document.getElementById('optionsContainer').innerHTML = optionsHtml;
+            document.getElementById('progress').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+        }
+
+        function handleAnswer(answerIndex) {
+            answers.push(answerIndex);
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+
+            const counts = answers.reduce((acc, val) => {
+                acc[val] = (acc[val] || 0) + 1;
+                return acc;
+            }, {});
+
+            const results = [
+                { type: 'Tourist', count: counts[0] || 0 },
+                { type: 'Pilgrim', count: counts[1] || 0 },
+                { type: 'Vagabond', count: counts[2] || 0 }
+            ];
+
+            const dominantType = results.reduce((a, b) => a.count > b.count ? a : b).type;
+            
+            document.getElementById('typeDescription').innerHTML = `
+                <h3>Your Primary Type: ${dominantType}</h3>
+                <p>${typeDescriptions[dominantType]}</p>
+            `;
+
+            const ctx = document.getElementById('chartContainer').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: results.map(r => r.type),
+                    datasets: [{
+                        data: results.map(r => r.count),
+                        backgroundColor: ['#0088FE', '#00C49F', '#FFBB28']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Start the quiz
+        showQuestion();
+    </script>
+</body>
+</html>
